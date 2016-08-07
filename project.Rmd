@@ -9,7 +9,6 @@ output:
 
 # Synopsis
 The storm and severe weather data from 1950 to November 2011 was evaluated for their impact. The weather data was roughly grouped into 48 event types. The impact on human health is compiled from the number of fatalities and injuries of each single event. The sum of injuries and fatalities indicates that tornados, (exzessive) heat, thunderstorms, lightning and (flash) floods are the most dangerous events. These events show up again, when calculating the sum of proprietary and crop damage in USD and breaking down to the ten most expensive events. 
-**Ten sentences summarizing the result.**
 
 # Used R Libraries
 ```{r loading libraries, results="hide", message=FALSE}
@@ -384,12 +383,3 @@ kable(select(topCosts, event, cost.per.year),digits=2)
 ```
 
 This evaluation shows about the same events as the human health evaulation.
-
-** 1 - 3 figures with plot have descriptive caption **
-** question: Across the united states which types of events are most harmful to population health? **
-** question: Across the united states which types of events have the greatest economic consequences? **
-** reproducible results, summaries, figures, tables **
-** document is written as it might be read by government or municipal manager **
-** synopsis **
-
-## 
