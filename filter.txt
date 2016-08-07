@@ -1,0 +1,111 @@
+Additional signs at end of string and wrong sines are removed and corrected
+```{r eliminate wrong signs}
+data$EVTYPE <- as.factor(gsub("[\\./]([ ]){0,10}$","",data$EVTYPE)) #signs at string end
+data$EVTYPE <- as.factor(gsub("[\\&;-]{1,3}","/",data$EVTYPE)) #signs instead of slash
+data$EVTYPE <- as.factor(gsub("[()]","",data$EVTYPE)) #signs instead of slash
+data$EVTYPE <- as.factor(gsub("mph","",data$EVTYPE)) #signs instead of slash
+data$EVTYPE <- as.factor(gsub("g([0-9]{1,})"," \\1",data$EVTYPE)) #signs instead of slash
+```
+reducing further to `r length(unique(data$EVTYPE))`
+
+Next spaces at the start of the strings and multiple spaces within are removed
+```{r eliminate heading whitespace}
+head(sort(unique(data$EVTYPE)),10)
+unique(data$EVTYPE[grepl("^tstm",data$EVTYPE)])
+data$EVTYPE <- as.factor(gsub("^[ ]+","",data$EVTYPE)) #(multiple) space at begin
+data$EVTYPE <- as.factor(gsub("[ ]{2,10}"," ",data$EVTYPE)) #(multiple space within)
+data$EVTYPE <- as.factor(gsub(" /","/",data$EVTYPE)) #space at slash begin
+data$EVTYPE <- as.factor(gsub("/ ","/",data$EVTYPE)) #space at slash begin
+data$EVTYPE <- as.factor(gsub("[ ]$","",data$EVTYPE)) #space at end of event
+head(sort(unique(data$EVTYPE)),30)
+```
+reducing further to `r length(unique(data$EVTYPE))`
+
+Finally several typing errors and singular/plural are corrected:
+```{r eliminate typos}
+summarydata <- grepl("[Ss]ummary", data$EVTYPE)
+unique(data$EVTYPE[summarydata])
+
+data$EVTYPE <- as.factor(gsub("winds","wind",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("wins","wind",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("w inds","wind",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("waves","wave",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("tstmw","tstm wind",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("floods","flood",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("fires","fire",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("temperatures","temperature",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("clouds","cloud",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("conditions","condition",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("storms","storm",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("slides","slide",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("pellets","pellet",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("effects","effect",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("snows","snow",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("showers","shower",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("flurries","flurry",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("lights","light",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("squalls","squall",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("roads","road",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("tides","tide",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("seas","sea",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("tornadoes","tornado",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("tornados","tornado",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("gusts","gust",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("swells","swell",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("sprouts","sprout",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("rains","rain",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("currents","current",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("trees","tree",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("chills","chill",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("funnels","funnel",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("advisories","advisory",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("jams","jam",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("floes","floe",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("spouts","spout",data$EVTYPE))
+
+
+
+unique(data$EVTYPE[grepl("s$",data$EVTYPE)])
+#data$EVTYPE <- as.factor(gsub("avalance","avalanche",data$EVTYPE))
+
+data$EVTYPE <- as.factor(gsub("avalance","avalanche",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("thuder","thunder",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("tunder","thunder",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("thuner","thunder",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("tstm","tstm wind",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("cool","cold",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("sml","small",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("strm","stream",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("cstl","coastal",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("beach erosin","beach erosion",data$EVTYPE))
+#data$EVTYPE <- as.factor(gsub("blow-out tides","blow-out tide",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("blowing snow- extreme wind chi","blowing snow/extreme wind chil",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("blowing snow & extreme wind ch","blowing snow/extreme wind chil",data$EVTYPE))
+#data$EVTYPE <- as.factor(gsub("brush fires","wild fire",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("brush fire","wild fire",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("highwind","high wind",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("wnd","wind",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("wintery","winter",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("wayter","water",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("wintry","winter",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("wildfire","wild fire",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("wild/forest","wild fire",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("([a-z]{3,}) \\1","\\1",data$EVTYPE))  # double words
+data$EVTYPE <- as.factor(gsub("fld","flood",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("floodin","flood",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("floodg","flood",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("unseaon","unseason",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("unusually","unusual",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("vog","fog",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("warmth","warm",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("([a-z])([0-9])","\\1 \\2",data$EVTYPE))
+
+toremove <- data$FATALITIES==0 & data$INJURIES==0 & data$COSTS==0
+sum(toremove)
+dim(data)
+data <- data[!toremove,]
+dim(data)
+
+sort(unique(data$EVTYPE))
+```
+reducing to a final number of event types of `r length(unique(data$EVTYPE))`.
