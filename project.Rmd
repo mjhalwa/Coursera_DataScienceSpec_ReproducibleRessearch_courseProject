@@ -1,5 +1,5 @@
 ---
-title: Detecting most
+title: Impact evaluation of storm and severe weather events
 author: "Martin Halwachs"
 date: "31 Juli 2016"
 output:
@@ -8,12 +8,15 @@ output:
 ---
 
 # Synopsis
+The storm and severe weather data from 1950 to November 2011 was evaluated for their impact. The weather data was roughly grouped into 48 event types. The impact on human health is compiled from the number of fatalities and injuries of each single event. The sum of injuries and fatalities indicates that tornados, (exzessive) heat, thunderstorms, lightning and (flash) floods are the most dangerous events. These events show up again, when calculating the sum of proprietary and crop damage in USD and breaking down to the ten most expensive events. 
 **Ten sentences summarizing the result.**
 
 # Used R Libraries
 ```{r loading libraries, results="hide", message=FALSE}
 library(dplyr)
 library(stringr)
+library(ggplot2)
+library(knitr)
 ```
 
 # Data Processing
@@ -25,7 +28,7 @@ download.file(fileUrl, tempFile)
 data <- read.csv(tempFile) #bz2 can be read directly without unzipping
 ```
 
-# Tidy Data
+## Tidy Data
 The dimension and column headers of the imported data are:
 ```{r show all column names}
 dim(data)
@@ -37,7 +40,7 @@ To reduce memory overhead less important columns are removed
 data <- select(data, c(BGN_DATE,EVTYPE,END_DATE,FATALITIES:CROPDMGEXP))
 ```
 
-## Explanation of relevant colum headers
+### Explanation of relevant colum headers
 The [documentation](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf) does not show the column header names. Therefore the following list shall provide necessary information about the column names. The section in the documentation is statet, if any information on this column was found. 
 
 (@) **BGN_DATE** - begin date of event (not explicitly stated in the documentation)  
@@ -280,6 +283,12 @@ This brings up the final list of event types of **`r length(unique(data$EVTYPE))
 sort(unique(data$EVTYPE))
 ```
 
+For better addressing, the column headers are reformatted accordingly.
+```{r make names}
+names(data) <- make.names(tolower(names(data)))
+```
+
+
 ## Checking Data
 The tidied data has a size of `r dim(data)`, first and last lines look like:
 ```{r check data lines}
@@ -293,9 +302,94 @@ str(data)
 ```
 
 # Results
-The follwing chapters will evaluated the consequences of the `r length(levels(data$EVTYPE))` events listed above.
-```{r whatsoever}
+From the tidy data set of the previous sections, several evaluations will be done to demonstrate the impact of the `r length(levels(data$EVTYPE))` events listed.
+
+## Harmfulness to population health
+This first chapter addresses the question, how harmful each event types is. Therefore fatalities and injuries are summed up across the entire united states for each single event.
+```{r fatality injury preparation}
+amounts <- with(data, tapply(fatalities, evtype, sum))
+healthdata <- data.frame(variable=as.factor("fatalities"), amount=as.vector(amounts), event=as.factor(names(amounts)))
+amounts <- with(data, tapply(injuries, evtype, sum))
+healthdata <- rbind(healthdata, data.frame(variable=as.factor("injuries"), amount=as.vector(amounts), event=as.factor(names(amounts))))
+
+healthdata[sample(nrow(healthdata), 20),]
 ```
 
+All entries without injuries or fatalities are dismissed.
+```{r dismiss zeros}
+healthdata <- filter(healthdata, amount>0)
+```
+
+As tornodas have by far the highest amount of injuries,
+```{r tornado counts}
+tornadoInjuries <- filter(healthdata, variable=='injuries', event=='tornado')$amount
+tornadoFatalities <- filter(healthdata, variable=='fatalities', event=='tornado')$amount
+```
+with **`r print(tornadoInjuries)`** injuries and **`r print(tornadoFatalities)`** fatalities, this event is removed for the following plot to show better relations.
+```{r dismiss tornados}
+healthdata.reduced <- healthdata[!healthdata$event=="tornado",]
+```
+
+The following plot shows the amount of fatalities and injuries for each event type.
+```{r fatality and injury plot}
+p <- ggplot(healthdata.reduced, aes(x=reorder(event, desc(event)),y=amount,fill=variable))
+p + geom_bar(stat='identity', position='dodge') + coord_flip() + labs(x="event types", fill="")
+```
+
+The graphic indicates several very dramatic events. The 10 most harmful events for injuries and fatalities are found and divided by the number of years recorded to calculate the impact per year
+```{r top fatality and injury}
+topFatalities <- head(arrange(filter(healthdata, variable=='fatalities'), desc(amount)),10)
+topFatalities <- mutate(topFatalities, fatalities.per.year=amount/(2011-1950))
+topInjuries <- head(arrange(filter(healthdata, variable=='injuries'), desc(amount)),10)
+topInjuries <- mutate(topInjuries, injuries.per.year=amount/(2011-1950))
+```
+
+The following tables shows the highest impact events with most occuring injuries and fatalities per year:
+```{r fatality and injury table}
+kable(select(topFatalities, event, fatalities.per.year),digits=2)
+kable(select(topInjuries, event, injuries.per.year),digits=2)
+```
+
+Comparing the above tables, several entries are found in both of them.
+
+## Economic consequences
+After evaluating the danger to population, also the cost factor will be investigated. The costs sum up from crop and property damage. First the total sum of all costs for each event is calculated.
+```{r cost preparation}
+costs <- with(data, tapply(costs, evtype, sum))
+costdata <- data.frame(cost=as.vector(costs), event=as.factor(names(amounts)))
+
+costdata[sample(nrow(costdata), 20),]
+```
+
+Next events without costs are dismissed.
+```{r dismiss zeros costs}
+#healthdata <- filter(healthdata, amount>0)
+```
+
+This plot depictures the money spent for each event within the recorded `r print(2011-1950)` years
+```{r cost plot}
+p <- ggplot(costdata, aes(x=reorder(event, desc(event)),y=cost))
+p + geom_bar(stat='identity', position='dodge') + coord_flip() + labs(x="event types", y="costs [USD]")
+```
+
+The graphic again indicates several costly. The 10 most expensive events are found and divided by the number of years recorded to calculate the impact per year
+```{r top costs}
+topCosts <- head(arrange(costdata, desc(cost)),10)
+topCosts <- mutate(topCosts, cost.per.year=cost/(2011-1950))
+```
+
+The following table notes down the most 10 expensive events in USD per year:
+```{r cost table}
+kable(select(topCosts, event, cost.per.year),digits=2)
+```
+
+This evaluation shows about the same events as the human health evaulation.
+
+** 1 - 3 figures with plot have descriptive caption **
+** question: Across the united states which types of events are most harmful to population health? **
+** question: Across the united states which types of events have the greatest economic consequences? **
+** reproducible results, summaries, figures, tables **
+** document is written as it might be read by government or municipal manager **
+** synopsis **
 
 ## 
