@@ -118,45 +118,34 @@ data <- select(data, -c(PROPDMG, CROPDMG, CROPDMGEXP))
 ```
 
 (@) **EVTYPE** - Envent type  
-Chapter 2.1.1 Table 1, lists several types of Storm Data events. The following list shows some sample of the `r length(unique(data$EVTYPE))` unique raw imported event types
+Chapter 2.1.1 Table 1, lists several types of Storm Data events. The following list shows some sample of the **`r length(unique(data$EVTYPE))`** different raw imported event types
 ```{r show data events}
-set.seed(123)
-sort(sample(unique(data$EVTYPE),60))
+#set.seed(123)
+set.seed(0)
+sort(sample(unique(data$EVTYPE),45))
 ```
 
-This small selection already shows that the list has several errors (e.g. 'Strong wind' and 'Strong Winds'), includes several summaries and could be reduced to a more compact list of several events.
+This small selection already shows that the list of event types is not well formated (e.g. 'Urban flood' and 'Urban Flooding'), includes several summaries and could be reduced to a more compact list of events. This will be achieved in the next steps
 
-First all elements are written lower case, which already solves some issues, next the summaries are removed,
+First all elements are written lower case and the summaries are removed,
 ```{r lower case and remove summaries}
-head(sort(unique(data$EVTYPE)),30)
 data$EVTYPE <- as.factor(str_to_lower(data$EVTYPE))
-head(sort(unique(data$EVTYPE)),30)
-
 summarydata <- grepl("summary", data$EVTYPE)
-unique(data$EVTYPE[summarydata])
 data <- data[!summarydata,]
 ```
-This step already reduced the list to `r length(unique(data$EVTYPE))` unique types.
-
-Next the steps is removing multiple spaces and wrong signes:
+Next the steps is removing unnecessary spaces and wrong signes:
 ```{r eliminate sign and whitespace errors}
-head(sort(unique(data$EVTYPE)),10)
-#unique(data$EVTYPE[grepl("^tstm",data$EVTYPE)])
-data$EVTYPE <- as.factor(gsub("^[ ]+","",data$EVTYPE)) #whitespace at begin
-data$EVTYPE <- as.factor(gsub("[ ]+$","",data$EVTYPE)) #whitespace at end
+data$EVTYPE <- as.factor(gsub("^[ ]+","",data$EVTYPE))    #whitespace at begin
+data$EVTYPE <- as.factor(gsub("[ ]+$","",data$EVTYPE))    #whitespace at end
 data$EVTYPE <- as.factor(gsub("[ ]{2,}"," ",data$EVTYPE)) #(multiple whitespaces)
-
-data$EVTYPE <- as.factor(gsub("[\\&;-]{1,3}","/",data$EVTYPE)) #signs instead of slash
-data$EVTYPE <- as.factor(gsub(" /","/",data$EVTYPE)) #whitespace before slash
-data$EVTYPE <- as.factor(gsub("/ ","/",data$EVTYPE)) #whitespace after slash
-
+data$EVTYPE <- as.factor(gsub("[\\&;-]{1,3}","/",data$EVTYPE))      #signs instead of slash
+data$EVTYPE <- as.factor(gsub(" /","/",data$EVTYPE))      #whitespace before slash
+data$EVTYPE <- as.factor(gsub("/ ","/",data$EVTYPE))      #whitespace after slash
 data$EVTYPE <- as.factor(gsub("[\\./]([ ]){0,10}$","",data$EVTYPE)) #signs at string end
-
-head(sort(unique(data$EVTYPE)),10)
 ```
 
 Finally the various event types are reduced to a rough grouping, while generating the group "other" for non-assignable entries.
-```{r reduce event types}
+```{r reduce event types, cache=TRUE}
 data$EVTYPE <- as.factor(gsub("^aval.*","avalanche",data$EVTYPE))
 data$EVTYPE <- as.factor(gsub("^(blizzard[ /$]|blow.*snow).*","blizzard",data$EVTYPE))
 data$EVTYPE <- as.factor(gsub("^(co?a?sta?l|beach).*","coastal flood",data$EVTYPE))
@@ -186,6 +175,7 @@ data$EVTYPE <- as.factor(gsub("^rain.*","heavy rain",data$EVTYPE))
 data$EVTYPE <- as.factor(gsub(".*(high tide|surf).*","high surf",data$EVTYPE))
 data$EVTYPE <- as.factor(gsub("^high.*wind.*","high wind",data$EVTYPE))
 data$EVTYPE <- as.factor(gsub("^hurri.*","hurricane (typhoon)",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("^ice.*fog.*","freezing fog",data$EVTYPE))
 data$EVTYPE <- as.factor(gsub("^ice.*","ice storm",data$EVTYPE))
 data$EVTYPE <- as.factor(gsub("^lig[hn]tn?ing.*","lightning",data$EVTYPE))
 data$EVTYPE <- as.factor(gsub("^sleet.*","sleet",data$EVTYPE))
@@ -202,11 +192,12 @@ data$EVTYPE <- as.factor(gsub("^(strong )?wi?nd.*","strong wind",data$EVTYPE))
 data$EVTYPE <- as.factor(gsub("^storm.*","storm surge/tide",data$EVTYPE))
 data$EVTYPE <- as.factor(gsub("^winter storm.*","winter storm",data$EVTYPE))
 data$EVTYPE <- as.factor(gsub("^wint[ery ]+(weather|mix).*","winter weather",data$EVTYPE))
-data$EVTYPE <- as.factor(gsub("^(frost|freez).*","frost/freeze",data$EVTYPE))
-data$EVTYPE <- as.factor(gsub(".*freez.*[^f][^o][^g]","frost/freeze",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("^(frost|freezing|freeze) [^f][^o][^g].*","frost/freeze",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("^(freeze|frost)$","frost/freeze",data$EVTYPE))
 data$EVTYPE <- as.factor(gsub("^driest*","drought",data$EVTYPE))
 data$EVTYPE <- as.factor(gsub("^downburst$","thunderstorm wind",data$EVTYPE))
-data$EVTYPE <- as.factor(gsub("^[fv]og","dense fog",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("^fog","dense fog",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("^vog$","volcanic ash",data$EVTYPE))
 data$EVTYPE <- as.factor(gsub("^hail.*","hail",data$EVTYPE))
 data$EVTYPE <- as.factor(gsub("^abnormally wet$","heavy rain",data$EVTYPE))
 data$EVTYPE <- as.factor(gsub("^wet weather$","heavy rain",data$EVTYPE))
@@ -284,38 +275,26 @@ data$EVTYPE <- as.factor(gsub("^(non|no severe).*","other",data$EVTYPE))
 data$EVTYPE <- as.factor(gsub("^[\\?e]$","other",data$EVTYPE))
 ```
 
-This brings up the final list of event types, beeing `r length(unique(data$EVTYPE))` different entries:
+This brings up the final list of event types of **`r length(unique(data$EVTYPE))`** different entries:
 ```{r final event type list}
 sort(unique(data$EVTYPE))
 ```
 
 ## Checking Data
-The data import is then checked in  
-(@) dimension,
-```{r check data dim}
-dim(data)
-```
-
-(@) first and last lines,
+The tidied data has a size of `r dim(data)`, first and last lines look like:
 ```{r check data lines}
 head(data)
 tail(data)
 ```
 
-(@) and data structure in R.
+The structure is as follows.
 ```{r check data structure}
 str(data)
 ```
 
-```{r check columns}
-unique(data$F)
-unique(data$MAG)
-```
-
 # Results
-The follwing chapters will evaluated the consequences of the `r length(levels(data$EVTYPE))` events listed below:
-```{r list events}
-#table(data$EVTYPE)
+The follwing chapters will evaluated the consequences of the `r length(levels(data$EVTYPE))` events listed above.
+```{r whatsoever}
 ```
 
 
