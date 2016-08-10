@@ -1,14 +1,23 @@
 ---
-title: Impact evaluation of storm and severe weather events
+title: "Impact evaluation of storm and severe weather events"
 author: "Martin Halwachs"
 date: "31 Juli 2016"
 output:
   html_document:
-    toc: TRUE
+    toc: yes
+  pdf_document:
+    toc: yes
 ---
+<style type="text/css">
+.table {
+
+    width: 55%;
+
+}
+</style>
 
 # Synopsis
-The storm and severe weather data from 1950 to November 2011 was evaluated for their impact. The weather data was roughly grouped into 48 event types. The impact on human health is compiled from the number of fatalities and injuries of each single event. The sum of injuries and fatalities indicates that tornados, (exzessive) heat, thunderstorms, lightning and (flash) floods are the most dangerous events. These events show up again, when calculating the sum of proprietary and crop damage in USD and breaking down to the ten most expensive events. 
+The storm and severe weather data from 1950 to November 2011 was evaluated for their impact. The weather data was roughly grouped into 48 event types. The impact on human health is compiled from the number of fatalities and injuries of each single event. The sum of injuries and fatalities indicates that tornados, (exzessive) heat, thunderstorms, lightning and (flash) floods are the most dangerous events. When comparing economic impacts, as sum of proprietary and crop damage, tornados and (flash floods) and thunderstorms are still very prominent. In addition there are hurricanes and storm surge/tide amoungt the top 4 most expensive events. Further Drought, ice storms and wild wires are among the top ten.
 
 # Used R Libraries
 ```{r loading libraries, results="hide", message=FALSE}
@@ -79,13 +88,14 @@ The following table sums up the treatment of this column:
 The property damage is adjusted according to the above exponents. Finally this column is dismissed from further evaulations.
 ```{r get accurate property damage}
 columns <- data$PROPDMGEXP %in% c("k","K")
-with(data, PROPDMG[columns] <- PROPDMG[columns]*1E3)
+data$PROPDMG[columns] <- data$PROPDMG[columns]*1E3
 
 columns <- data$PROPDMGEXP %in% c("m","M")
-with(data, PROPDMG[columns] <- PROPDMG[columns]*1E6)
+data$PROPDMG[columns] <- data$PROPDMG[columns]*1E6
 
 columns <- data$PROPDMGEXP %in% c("b","B")
-with (data, PROPDMG[columns] <- PROPDMG[columns]*1E9)
+#with (data, PROPDMG[columns] <- PROPDMG[columns]*1E9)
+data$PROPDMG[columns] <- data$PROPDMG[columns]*1E9
 
 columns <- !(data$PROPDMGEXP %in% c("","k","K","m","M","b","B"))
 data$PROPDMG[columns] <- 0
@@ -104,13 +114,13 @@ table(data$CROPDMGEXP)
 In accordance with PROPDMGEXP, the exponents are applied. The costs for crop and property damage are summed and the separate columns are dismissed from further evaluations. 
 ```{r get accurate crop damage}
 columns <- data$CROPDMGEXP %in% c("k","K")
-with(data, CROPDMG[columns] <- CROPDMG[columns]*1E3)
+data$CROPDMG[columns] <- data$CROPDMG[columns]*1E3
 
 columns <- data$CROPDMGEXP %in% c("m","M")
-with(data, CROPDMG[columns] <- CROPDMG[columns]*1E6)
+data$CROPDMG[columns] <- data$CROPDMG[columns]*1E6
 
 columns <- data$CROPDMGEXP %in% c("b","B")
-with (data, CROPDMG[columns] <- CROPDMG[columns]*1E9)
+data$CROPDMG[columns] <- data$CROPDMG[columns]*1E9
 
 columns <- !(data$CROPDMGEXP %in% c("","k","K","m","M","b","B"))
 data$CROPDMG[columns] <- 0
@@ -164,7 +174,7 @@ data$EVTYPE <- as.factor(gsub("^(ex(cess|trem)|prolong|record|un(usual|season)|v
 data$EVTYPE <- as.factor(gsub("^(hypotherm).*","extreme cold/wind chill",data$EVTYPE))
 data$EVTYPE <- as.factor(gsub("^(ex(cess|trem)|prolong|record|un(usual|season)|very|abnorm|high|severe).*(rain|precip).*","heavy rain",data$EVTYPE))
 data$EVTYPE <- as.factor(gsub("^low temp.*record$","e",data$EVTYPE))
-data$EVTYPE <- as.factor(gsub("^marine (thunder|tstm).*","marine thunderstorm wind",data$EVTYPE))
+data$EVTYPE <- as.factor(gsub("^marine (thunder|tstm).*","marine thunderstorm wind",data$EVTYPE)) 
 data$EVTYPE <- as.factor(gsub("^(flash|flood).*(flooo?d|flash).*","flash flood",data$EVTYPE))
 data$EVTYPE <- as.factor(gsub("^(drift|(mud|land).*slide).*","debris flow",data$EVTYPE))
 data$EVTYPE <- as.factor(gsub("^(river|flood|drowning|urban|(small )?stream|street).*","flood",data$EVTYPE))
@@ -332,24 +342,26 @@ healthdata.reduced <- healthdata[!healthdata$event=="tornado",]
 The following plot shows the amount of fatalities and injuries for each event type.
 ```{r fatality and injury plot}
 p <- ggplot(healthdata.reduced, aes(x=reorder(event, desc(event)),y=amount,fill=variable))
-p + geom_bar(stat='identity', position='dodge') + coord_flip() + labs(x="event types", fill="")
+p + geom_bar(stat='identity', position='dodge') + coord_flip() + labs(x="event types", fill="") + ggtitle("comparison of fatalities and injuries\nin different event types")
 ```
 
 The graphic indicates several very dramatic events. The 10 most harmful events for injuries and fatalities are found and divided by the number of years recorded to calculate the impact per year
 ```{r top fatality and injury}
 topFatalities <- head(arrange(filter(healthdata, variable=='fatalities'), desc(amount)),10)
 topFatalities <- mutate(topFatalities, fatalities.per.year=amount/(2011-1950))
+topFatalities <- mutate(topFatalities, fatalities.relative=amount/sum(amount)*100)
 topInjuries <- head(arrange(filter(healthdata, variable=='injuries'), desc(amount)),10)
 topInjuries <- mutate(topInjuries, injuries.per.year=amount/(2011-1950))
+topInjuries <- mutate(topInjuries, injuries.relative=amount/sum(amount)*100)
 ```
 
 The following tables shows the highest impact events with most occuring injuries and fatalities per year:
 ```{r fatality and injury table}
-kable(select(topFatalities, event, fatalities.per.year),digits=2)
-kable(select(topInjuries, event, injuries.per.year),digits=2)
+kable(select(topFatalities, event, fatalities.per.year, fatalities.relative),digits=2, col.names=c("event type","fatalities per year","relative fatalities [%]"))
+kable(select(topInjuries, event, injuries.per.year, injuries.relative),digits=2, col.names=c("event type","injuries per year","relative injuries [%]"))
 ```
 
-Comparing the above tables, several entries are found in both of them.
+Comparing the above tables, several entries are found in both of them. Tornados causes by far most fatalities of all event types and even more injuries. 
 
 ## Economic consequences
 After evaluating the danger to population, also the cost factor will be investigated. The costs sum up from crop and property damage. First the total sum of all costs for each event is calculated.
@@ -367,19 +379,20 @@ Next events without costs are dismissed.
 
 This plot depictures the money spent for each event within the recorded `r print(2011-1950)` years
 ```{r cost plot}
-p <- ggplot(costdata, aes(x=reorder(event, desc(event)),y=cost))
-p + geom_bar(stat='identity', position='dodge') + coord_flip() + labs(x="event types", y="costs [USD]")
+p <- ggplot(costdata, aes(x=reorder(event, desc(event)),y=cost/1e9))
+p + geom_bar(stat='identity', position='dodge') + coord_flip() + labs(x="event types", y="costs [billion USD]") + ggtitle("economical impact of different event types")
 ```
 
 The graphic again indicates several costly. The 10 most expensive events are found and divided by the number of years recorded to calculate the impact per year
 ```{r top costs}
 topCosts <- head(arrange(costdata, desc(cost)),10)
-topCosts <- mutate(topCosts, cost.per.year=cost/(2011-1950))
+topCosts <- mutate(topCosts, cost.per.year=cost/(2011-1950)/1e9)
+topCosts <- mutate(topCosts, cost.relative=cost/sum(cost)*100)
 ```
 
-The following table notes down the most 10 expensive events in USD per year:
+The following table notes down the 10 most expensive events in billion USD per year:
 ```{r cost table}
-kable(select(topCosts, event, cost.per.year),digits=2)
+kable(select(topCosts, event, cost.per.year, cost.relative),digits=2,col.names=c("event type","cost per year [billion USD]","relative costs[%]"))
 ```
 
-This evaluation shows about the same events as the human health evaulation.
+This evaluation shows about the same events as the human health evaulation. New are hurricanes and storm surge/tide, which are among the 4 most expensive events within 1950 and 2011. These are responsible for morethan 75% of all costs.
